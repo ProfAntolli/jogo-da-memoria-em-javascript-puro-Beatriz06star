@@ -1,56 +1,54 @@
-const emojis = ['🦁', '🦄', '🐶', '🐭', '🦊', '🐼', '🐯', '🦕'];
-let cartas = [...emojis, ...emojis];
-let primeiraCarta = null;
-let bloqueado = false;
+const cards = document.querySelectorAll('.memory-card');
+let hasFlippedCard = false;
+let lockBoard = false;
+let firstCard, secondCard;
 
-function embaralhar(array) {
-  for (let i = array.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [array[i], array[j]] = [array[j], array[i]];
+function flipCard() {
+  if (lockBoard) return;
+  if (this === firstCard) return;
+
+  this.classList.add('flip');
+
+  if (!hasFlippedCard) {
+    hasFlippedCard = true;
+    firstCard = this;
+    return;
   }
+
+  secondCard = this;
+  checkForMatch();
 }
 
-function criarCarta(emoji) {
-  const carta = document.createElement('div');
-  carta.classList.add('carta');
-  carta.dataset.valor = emoji;
-  carta.innerText = emoji;
+function checkForMatch() {
+  let isMatch = firstCard.dataset.framework === secondCard.dataset.framework;
+  isMatch ? disableCards() : unflipCards();
+}
 
-  carta.addEventListener('click', () => {
-    if (bloqueado || carta.classList.contains('virada') || carta.classList.contains('pareada')) return;
+function disableCards() {
+  firstCard.removeEventListener('click', flipCard);
+  secondCard.removeEventListener('click', flipCard);
+  resetBoard();
+}
 
-    carta.classList.add('virada');
+function unflipCards() {
+  lockBoard = true;
+  setTimeout(() => {
+    firstCard.classList.remove('flip');
+    secondCard.classList.remove('flip');
+    resetBoard();
+  }, 1000);
+}
 
-    if (!primeiraCarta) {
-      primeiraCarta = carta;
-    } else {
-      bloqueado = true;
-      if (carta.dataset.valor === primeiraCarta.dataset.valor) {
-        carta.classList.add('pareada');
-        primeiraCarta.classList.add('pareada');
-        primeiraCarta = null;
-        bloqueado = false;
-      } else {
-        setTimeout(() => {
-          carta.classList.remove('virada');
-          primeiraCarta.classList.remove('virada');
-          primeiraCarta = null;
-          bloqueado = false;
-        }, 1000);
-      }
-    }
+function resetBoard() {
+  [hasFlippedCard, lockBoard] = [false, false];
+  [firstCard, secondCard] = [null, null];
+}
+
+(function shuffle() {
+  cards.forEach(card => {
+    let randomPos = Math.floor(Math.random() * 12);
+    card.style.order = randomPos;
   });
+})();
 
-  return carta;
-}
-
-function iniciarJogo() {
-  const tabuleiro = document.getElementById('tabuleiro');
-  embaralhar(cartas);
-  cartas.forEach(emoji => {
-    const carta = criarCarta(emoji);
-    tabuleiro.appendChild(carta);
-  });
-}
-
-iniciarJogo();
+cards.forEach(card => card.addEventListener('click', flipCard));
